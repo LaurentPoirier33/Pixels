@@ -1,22 +1,39 @@
 import pygame
 import pygame.gfxdraw
+import re
+import diffscreens
+
+# skip the graphics entry once, to allow the ui to load
+init = 0
 
 SCN_WDTH = 500
 SCN_HGHT = 500
 
-SCN_WDTH = input("enter screen width\n")
-SCN_HGHT = input("enter screen height\n")
-
 pygame.init()
-lcd = pygame.display.set_mode((int(SCN_WDTH),int(SCN_HGHT)))
+main_screen = pygame.display.set_mode((int(SCN_WDTH),int(SCN_HGHT)))
 clock = pygame.time.Clock()
 running = True
+
+oled_screen = pygame.Surface((128,64))
 
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 RED = (255,0,0)
 GREEN = (0,255,0)
 BLUE = (0,0,255)
+YELLOW = (255,255,0)
+PINK = (255,0,255)
+
+startx = 50
+starty = 50
+
+pixels_width = 128
+pixels_height = 64
+oled_width = 145 # pcb width
+oled_height = 140 # pcb height
+x_pixels = startx+8
+y_pixels = starty+(oled_height/2-pixels_height/2)
+screen_blue = (0,0,60)
 
 current_font = pygame.font.SysFont("Courier" , 20, False, False)
 textColor = WHITE
@@ -27,14 +44,14 @@ cursor = (50,50)
 function_stack = []
 
 # draw the specific instruction
-def draw_function(function, arguments):
+def draw_function(lcd, function, arguments):
 	global textColor
 	global backtextColor
 	global textSize
 	global cursor
 	# c++: setTextColor (uint16_t c, OPTIONAL uint16_t bg) color, background color
 	# py: textColor = (color_tuple), backtextColor = (color_tuple)
-	if ("setTextColor" in function):
+	if re.search(r"\bsetTextColor\b", function):
 		if (len(arguments) != 1):
 			print("Invalid setTextColor call at line", i+1)
 			return
@@ -42,7 +59,7 @@ def draw_function(function, arguments):
 
 	# c++: setTextSize (uint8_t s)
 	# py: textSize = (size)
-	if ("setTextSize" in function):
+	if re.search(r"\bsetTextSize\b", function):
 		if (len(arguments) != 1):
 			print("Invalid setTextSize call at line", i+1)
 			return
@@ -50,7 +67,7 @@ def draw_function(function, arguments):
 
 	# c++: setCursor (int16_t x, int16_t y)
 	# py: cursor = (x,y)
-	if ("setCursor" in function):
+	if re.search(r"\bsetCursor\b", function):
 		if (len(arguments) != 2):
 			print("Invalid setCursor call at line", i+1)
 			return
@@ -63,7 +80,7 @@ def draw_function(function, arguments):
 	# no bachground argument for transparent background
 	if ("print" in function):
 		if (len(arguments) != 1):
-			print("Invalid print call at line", i+1)
+			print("Invalid print call")
 			return
 		current_font = pygame.font.SysFont("Courier",
 			textSize,
@@ -81,11 +98,19 @@ def draw_function(function, arguments):
 	if ("clearDisplay" in function):
 		lcd.fill("black")
 
+	# c++: fillScreen (uint16_t color)
+	# py: fill(color, rect=None, special_flags=0)
+	if ("fillScreen" in function):
+		if (len(arguments) != 1):
+			print("Invalid fillScreen call")
+			return
+		lcd.fill(arguments[0])
+
 	# c++: drawPixel (int16_t x, int16_t y, uint16_t color)
 	# py: pixel(surface, x, y, color)
 	if "drawPixel" in function:
 		if (len(arguments) != 3):
-			print("Invalid drawPixel call at line", i+1)
+			print("Invalid drawPixel call")
 			return
 		pygame.gfxdraw.pixel(lcd, 
 			int(arguments[0]), 
@@ -96,7 +121,7 @@ def draw_function(function, arguments):
 	# py: hline(surface, x1, x2, y, color)
 	if ("drawFastHLine" in function):
 		if (len(arguments) != 4):
-			print("Invalid drawFastHLine call at line", i+1)
+			print("Invalid drawFastHLine call")
 			return
 		pygame.gfxdraw.hline(lcd,
 			int(arguments[0]),
@@ -108,7 +133,7 @@ def draw_function(function, arguments):
 	# py: vline(surface, x, y1, y2, color)
 	if ("drawFastVLine" in function):
 		if (len(arguments) != 4):
-			print("Invalid drawFastVLine call at line", i+1)
+			print("Invalid drawFastVLine call")
 			return
 		pygame.gfxdraw.vline(lcd,
 			int(arguments[0]),
@@ -120,7 +145,7 @@ def draw_function(function, arguments):
 	# pi: line(surface, x1, y1, x2, y2, color)
 	if("drawLine" in function):
 		if (len(arguments) != 5):
-			print("Invalid drawLine call at line", i+1)
+			print("Invalid drawLine call")
 			return
 		pygame.gfxdraw.line(lcd,
 			int(arguments[0]),
@@ -135,7 +160,7 @@ def draw_function(function, arguments):
 	# example: (x,y,w,h)
 	if ("drawRect" in function):
 		if (len(arguments) != 5):
-			print("Invalid drawRect call at line", i+1)
+			print("Invalid drawRect call")
 			return
 		rectangle = (int(arguments[0]),
 			int(arguments[1]),
@@ -151,7 +176,7 @@ def draw_function(function, arguments):
 	# example: (x,y,w,h)
 	if ("fillRect" in function):
 		if (len(arguments) != 5):
-			print("Invalid fillRect call at line", i+1)
+			print("Invalid fillRect call")
 			return
 		rectangle = (int(arguments[0]),
 			int(arguments[1]),
@@ -165,7 +190,7 @@ def draw_function(function, arguments):
 	# py: circle(surface, x, y, r, color)
 	if ("drawCircle" in function):
 		if (len(arguments) != 4):
-			print("Invalid drawCircle call at line", i+1)
+			print("Invalid drawCircle call")
 			return
 		pygame.gfxdraw.circle(lcd,
 			int(arguments[0]),
@@ -177,7 +202,7 @@ def draw_function(function, arguments):
 	# py: filled_circle(surface, x, y, r, color)
 	if ("fillCircle" in function):
 		if (len(arguments) != 4):
-			print("Invalid fillCircle call at line", i+1)
+			print("Invalid fillCircle call")
 			return
 		pygame.gfxdraw.filled_circle(lcd,
 			int(arguments[0]),
@@ -189,7 +214,7 @@ def draw_function(function, arguments):
 	# py: ellipse(surface, x, y, rx, ry, color)
 	if ("drawEllipse" in function):
 		if (len(arguments) != 5):
-			print("Invalid drawEllipse call at line", i+1)
+			print("Invalid drawEllipse call")
 			return
 		pygame.gfxdraw.ellipse(lcd,
 			int(arguments[0]),
@@ -202,7 +227,7 @@ def draw_function(function, arguments):
 	# py: filled_ellipse(surface, x, y, rx, ry, color)
 	if ("fillEllipse" in function):
 			if (len(arguments) != 5):
-				print("Invalid fillEllipse call at line", i+1)
+				print("Invalid fillEllipse call")
 				return
 			pygame.gfxdraw.filled_ellipse(lcd,
 				int(arguments[0]),
@@ -215,7 +240,7 @@ def draw_function(function, arguments):
 	# py: trigon(surface, x1, y1, x2, y2, x3, y3, color)
 	if ("drawTriangle" in function):
 		if (len(arguments) != 7):
-			print("Invalid drawTriangle call at line", i+1)
+			print("Invalid drawTriangle call")
 			return
 		pygame.gfxdraw.trigon(lcd,
 			int(arguments[0]),
@@ -230,7 +255,7 @@ def draw_function(function, arguments):
 	# py: filled_trigon(surface, x1, y1, x2, y2, x3, y3, color)
 	if ("fillTriangle" in function):
 		if (len(arguments) != 7):
-			print("Invalid fillTriangle call at line", i+1)
+			print("Invalid fillTriangle call")
 			return
 		pygame.gfxdraw.filled_trigon(lcd,
 			int(arguments[0]),
@@ -240,6 +265,51 @@ def draw_function(function, arguments):
 			int(arguments[4]),
 			int(arguments[5]),
 			arguments[6])
+	# c++: drawRoundRect (int16_t x0, int16_t y0, int16_t w, int16_t h, int16_t radius, uint16_t color)
+	# py: uses line() and arc()
+	# wow, this works well, dynamically too
+	# arc() draws flipped unit circle, 0 degrees is positive x, 
+	# 90 degrees is negative y
+	if ("drawRoundRect" in function):
+		if (len(arguments) != 6):
+			print("Invalid drawRoundRect call")
+			return
+		x = int(arguments[0])
+		y = int(arguments[1])
+		w = int(arguments[2])
+		h = int(arguments[3])
+		r = int(arguments[4])
+		color = arguments[5]
+		pygame.gfxdraw.line(lcd,x+r,y,x+w-r,y,color) # top 
+		pygame.gfxdraw.line(lcd,x,y+r,x,y+h-r,color) # right
+		pygame.gfxdraw.line(lcd,x+w,y+r,x+w,y+h-r,color) # left
+		pygame.gfxdraw.line(lcd,x+r,y+h,x+w-r,y+h,color) # bottom
+		pygame.gfxdraw.arc(lcd, x+r,y+r,r,180,270,color) # top left corner
+		pygame.gfxdraw.arc(lcd, x+w-r,y+r,r,270,0,color) # top right corner
+		pygame.gfxdraw.arc(lcd, x+r,y+h-r,r,90,180,color) # bottom left corner
+		pygame.gfxdraw.arc(lcd, x+w-r,y+h-r,r,0,90,color) # bottom right corner
+
+	# use rectangles and mke a cross looking shape
+	# make a rectangle (x+r,y,w-r,h-r)
+	# make a rectangle (x,y+r,w-r,h-r)
+	if ("fillRoundRect" in function):
+		if (len(arguments) != 6):
+				print("Invalid fillRoundRect call")
+				return
+		x = int(arguments[0])
+		y = int(arguments[1])
+		w = int(arguments[2])
+		h = int(arguments[3])
+		r = int(arguments[4])
+		color = arguments[5]
+		rect_vert = (x+r,y,w-2*r,h) # vertical (center) rectangle
+		rect_horz = (x,y+r,w+1,h-2*r) # horizontal (center) rectangle
+		pygame.gfxdraw.box(lcd,rect_vert,color) # verticle rect
+		pygame.gfxdraw.box(lcd,rect_horz,color) # horizontal rect
+		pygame.gfxdraw.filled_circle(lcd, x+r,y+r,r,color) # top left corner
+		pygame.gfxdraw.filled_circle(lcd, x+w-r,y+r,r,color) # top right corner
+		pygame.gfxdraw.filled_circle(lcd, x+r,y+h-r,r,color) # bottom left corner
+		pygame.gfxdraw.filled_circle(lcd, x+w-r,y+h-r,r,color) # bottom right corner
 
 # filter the instruction and parse to draw_function
 def handle_instruction(instruction):
@@ -277,20 +347,30 @@ def handle_instruction(instruction):
 					args[j] = RED
 				if ("BLUE" in args[j]):
 					args[j] = BLUE
+				if ("YELLOW" in args[j]):
+					args[j] = YELLOW
+				if ("PINK" in args[j]):
+					args[j] = PINK
 
-	function_stack.append(lambda: draw_function(func, args))
+	function_stack.append(lambda: draw_function(oled_screen, func, args))
 
 while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
-	lcd.fill("black")
+	main_screen.fill("white")
 
-	instruction = input("Enter line\n")
-	handle_instruction(instruction)
-	for func in function_stack:
-		func()
+	diffscreens.draw128x64oled(main_screen,startx,starty)
 
+	if (init == 1):
+		instruction = input("Enter line\n")
+		handle_instruction(instruction)
+		oled_screen.fill(screen_blue)
+		for func in function_stack:
+			func()
+			main_screen.blit(oled_screen, (x_pixels,y_pixels))
+
+	init = 1
 	pygame.display.flip()
 	clock.tick(60) # 60 fps
 
