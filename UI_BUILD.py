@@ -6,6 +6,9 @@ import diffscreens
 # skip the graphics entry once, to allow the ui to load
 init = 0
 
+# color of undrawn pixels
+pixel_color = (0,0,0)
+
 # where to put the top left corner of either lcd
 startx = 50
 starty = 50
@@ -21,6 +24,13 @@ lcd_w = 280
 lcd_h = 320
 lcd_x = startx+5
 lcd_y = starty+5
+
+# 240x240 lcd graph definitions
+
+rnd_lcd_w = 240
+rnd_lcd_h = 240
+rnd_lcd_x = startx
+rnd_lcd_y = starty
 
 print("Usage tips:\n") 
 print("128x64 OLED -> screen_type = 64_OLED\n")
@@ -52,8 +62,8 @@ while (True):
 		break
 	elif (screen_type == "RNDLCD"):
 		display_screen = pygame.Surface((240,240),pygame.SRCALPHA) #SRCALHPA is transparent canvas
-		x_pixels = lcd_x
-		y_pixels = lcd_y
+		x_pixels = rnd_lcd_x
+		y_pixels = rnd_lcd_y
 		break
 	else:
 		print("Incorrect display type call")
@@ -83,7 +93,6 @@ textSize = 10
 cursor = (50,50)
 
 function_stack = []
-
 # draw the specific instruction
 def draw_function(lcd, function, arguments):
 	global textColor
@@ -421,28 +430,38 @@ def handle_instruction(instruction):
 				if ("PINK" in args[j]):
 					args[j] = PINK
 
-	function_stack.append(lambda: draw_function(display_screen, func, args))
+	function_stack.append((draw_function, display_screen, func, args))
 
 while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
 	main_screen.fill("white")
+# this line below allows the canvas to be cleared prior to redrawing, to avoid old functions
+	display_screen.fill(pygame.SRCALPHA)
+#
 	if (screen_type == "64_OLED"):
 		diffscreens.draw128x64oled(main_screen,startx,starty)
+		pixel_color = screen_blue
 	if (screen_type == "280LCD"):
 		diffscreens.draw280x320lcd(main_screen,startx,starty)
+		pixel_color = matte
 	if (screen_type == "240LCD"):
 		diffscreens.draw240x320lcd(main_screen,startx,starty)
+		pixel_color = matte
 	if (screen_type == "RNDLCD"):
 		diffscreens.draw240x240roundlcd(main_screen,startx,starty)
+		pixel_color = matte
 
 	if (init == 1):
-		instruction = input("Enter line\n")
+		instruction = input("Enter command\n")
 		handle_instruction(instruction)
-		for func in function_stack:
-			func()
+		for funct, *argum in function_stack:
+			# the canvas never gets its function removed, so blit canvas whenever the array is popped or emptied
+			print(funct, *argum, "\n")
+			funct(*argum)
 			main_screen.blit(display_screen, (x_pixels,y_pixels))
+		#print("DEBUG STACK:\n",debug_stack)
 
 	init = 1
 	pygame.display.flip()
