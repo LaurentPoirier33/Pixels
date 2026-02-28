@@ -16,28 +16,47 @@ pixels_height = 64
 oled_width = 145 # pcb width
 oled_height = 140 # pcb height
 
-# 280x320 lcd graph definitions
+# 280x320 and 240x320 lcd graph definitions
 lcd_w = 280
 lcd_h = 320
 lcd_x = startx+5
 lcd_y = starty+5
 
-
 print("Usage tips:\n") 
-print("128x64 OLED -> screen_type = 64_OLED\n280x320 lcd -> screen_type = 320LCD")
+print("128x64 OLED -> screen_type = 64_OLED\n")
+print("280x320 lcd -> screen_type = 280LCD\n")
+print("240x320 lcd -> screen_type = 240LCD\n")
+print("240x240 round lcd -> screen_type = RNDLCD\n")
+print("Coding tips:\n")
+print("If you want to remove the last function, simply type -1\n")
+print("If you want to get rid of all the functions, type 0\n")
 
-screen_type = input("What type of display is the UI being made for?\n")
 
-if (screen_type == "64_OLED"):
-	display_screen = pygame.Surface((128,64))
-	# where the first pixel is with respect to start_x&y
-	x_pixels = startx+8
-	y_pixels = starty+(oled_height/2-pixels_height/2)
-
-if (screen_type == "320LCD"):
-	display_screen = pygame.Surface((280,320))
-	x_pixels = lcd_x
-	y_pixels = lcd_y
+while (True):
+	screen_type = input("What type of display is the UI being made for?\n")
+	if (screen_type == "64_OLED"):
+		display_screen = pygame.Surface((128,64),pygame.SRCALPHA)
+		# where the first pixel is with respect to start_x&y
+		x_pixels = startx+8
+		y_pixels = starty+(oled_height/2-pixels_height/2)
+		break
+	elif (screen_type == "280LCD"):
+		display_screen = pygame.Surface((280,320),pygame.SRCALPHA)
+		x_pixels = lcd_x
+		y_pixels = lcd_y
+		break
+	elif (screen_type == "240LCD"):
+		display_screen = pygame.Surface((240,320),pygame.SRCALPHA)
+		x_pixels = lcd_x
+		y_pixels = lcd_y
+		break
+	elif (screen_type == "RNDLCD"):
+		display_screen = pygame.Surface((240,240),pygame.SRCALPHA) #SRCALHPA is transparent canvas
+		x_pixels = lcd_x
+		y_pixels = lcd_y
+		break
+	else:
+		print("Incorrect display type call")
 
 SCN_WDTH = 500
 SCN_HGHT = 500
@@ -332,7 +351,6 @@ def draw_function(lcd, function, arguments):
 		pygame.gfxdraw.filled_circle(lcd, x+w-r,y+r,r,color) # top right corner
 		pygame.gfxdraw.filled_circle(lcd, x+r,y+h-r,r,color) # bottom left corner
 		pygame.gfxdraw.filled_circle(lcd, x+w-r,y+h-r,r,color) # bottom right corner
-
 # filter the instruction and parse to draw_function
 def handle_instruction(instruction):
 	global function_stack
@@ -345,6 +363,14 @@ def handle_instruction(instruction):
 			function_stack.pop()
 			print("function removed")
 			return
+	if (instruction == '0'):
+		# wipe function stack
+		function_stack = []
+		print("stack cleared")
+		return
+	if (instruction == ''):
+		print("skipped line")
+		return
 	else:
 		if "(" not in instruction or ")" not in instruction:
 			print("not a real function")
@@ -364,6 +390,21 @@ def handle_instruction(instruction):
 					args[j] = WHITE
 				if ("BLACK" in args[j]):
 					args[j] = BLACK
+				if ("GREEN" in args[j]):
+					print("only white or black on this oled")
+					return
+				if ("RED" in args[j]):
+					print("only white or black on this oled")
+					return		
+				if ("BLUE" in args[j]):
+					print("only white or black on this oled")
+					return
+				if ("YELLOW" in args[j]):
+					print("only white or black on this oled")
+					return
+				if ("PINK" in args[j]):
+					print("only white or black on this oled")
+					return
 			else:
 				if ("WHITE" in args[j]):
 					args[j] = WHITE
@@ -389,11 +430,13 @@ while running:
 	main_screen.fill("white")
 	if (screen_type == "64_OLED"):
 		diffscreens.draw128x64oled(main_screen,startx,starty)
-		display_screen.fill(screen_blue)
-	if (screen_type == "320LCD"):
+	if (screen_type == "280LCD"):
 		diffscreens.draw280x320lcd(main_screen,startx,starty)
-		display_screen.fill(matte)
-	
+	if (screen_type == "240LCD"):
+		diffscreens.draw240x320lcd(main_screen,startx,starty)
+	if (screen_type == "RNDLCD"):
+		diffscreens.draw240x240roundlcd(main_screen,startx,starty)
+
 	if (init == 1):
 		instruction = input("Enter line\n")
 		handle_instruction(instruction)

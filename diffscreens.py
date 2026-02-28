@@ -87,8 +87,6 @@ def draw128x64oled(screen,x,y):
 	pygame.gfxdraw.filled_circle(screen,x+10,y+oled_height-11,5,white)
 	pygame.gfxdraw.filled_circle(screen,x+oled_width-11,y+oled_height-11,10,solder_silver)
 	pygame.gfxdraw.filled_circle(screen,x+oled_width-11,y+oled_height-11,5,white)
-
-
 def draw280x320lcd(screen,x,y):
 	# x and y are starting point for everything
 	lcd_w = 280
@@ -130,6 +128,71 @@ def draw280x320lcd(screen,x,y):
 	pygame.gfxdraw.box(screen,ribbon,orange)
 	pygame.gfxdraw.box(screen,ribbon2,orange)
 	pygame.gfxdraw.box(screen,blackspot,black)
+def draw240x320lcd(screen,x,y):
+	# x and y are starting point for everything
+	lcd_w = 240
+	lcd_h = 320
+	lcd_x = x+5
+	lcd_y = y+5
 
+	carrier_w = lcd_w + 10 # 5 pixels on each side
+	carrier_h = lcd_h + 30 # large bump at bottom
 
+	# Ribbon Cable Width
+	r_c_w = lcd_w/1.5 
+	r_c_h = 30
+	r_c_x = x+(carrier_w/2-r_c_w/2)
+	r_c_y = y+carrier_h
 
+	# Secondary Ribbon Cable
+	rc2_w = r_c_w/1.5
+	rc2_h = 45
+	rc2_x = r_c_x+(r_c_w/2-rc2_w/2)
+	rc2_y = r_c_y+r_c_h
+
+	# Black bar on secondary ribbon cable
+	bs_w = r_c_w/1.5
+	bs_h = 23
+	bs_x = r_c_x+(r_c_w/2-rc2_w/2)
+	bs_y = rc2_y+bs_h
+
+	# rectangles
+	pcb = (x,y,carrier_w,carrier_h)
+	pixels = (lcd_x,lcd_y,lcd_w,lcd_h)
+	ribbon = (r_c_x,r_c_y,r_c_w,r_c_h)
+	ribbon2 = (rc2_x,rc2_y,rc2_w,rc2_h)
+	blackspot = (bs_x,bs_y,bs_w,bs_h)
+
+	# draws
+	pygame.gfxdraw.box(screen,pcb,black)
+	pygame.gfxdraw.box(screen,pixels,matte)
+	pygame.gfxdraw.box(screen,ribbon,orange)
+	pygame.gfxdraw.box(screen,ribbon2,orange)
+	pygame.gfxdraw.box(screen,blackspot,black)
+def draw240x240roundlcd(screen,x,y):
+
+	screen_width = 240
+	screen_height = 240
+	screen_radius = 120	
+	backing_radius = screen_radius+5 # 5 pixels everywhere
+	x_center = x+screen_radius
+	y_center = x+screen_radius # purposfully repeated
+
+	rbn_back_w = screen_radius
+	rbn_back_h = 40
+	rbn_back_x = x_center-(rbn_back_w/2)
+	rbn_back_y = y_center+(screen_radius-rbn_back_h/2)
+
+	rbn_w = screen_radius-6 # three pixels on either side
+	rbn_h = rbn_back_h+5 # overlapping rbn_back
+	rbn_x = x_center-(rbn_w/2)
+	rbn_y = y_center+(screen_radius-rbn_back_h/2)
+
+	# rectangles:
+	rbn_back = (rbn_back_x,rbn_back_y,rbn_back_w,rbn_back_h)
+	rbn = (rbn_x,rbn_y,rbn_w,rbn_h)
+
+	pygame.gfxdraw.box(screen,rbn_back,black)
+	pygame.gfxdraw.box(screen,rbn,orange)
+	pygame.gfxdraw.filled_circle(screen,x_center,y_center,backing_radius,black)
+	pygame.gfxdraw.filled_circle(screen,x_center,y_center,screen_radius,matte)
