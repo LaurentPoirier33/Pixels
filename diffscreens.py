@@ -1,6 +1,16 @@
 import pygame
 import pygame.gfxdraw
 
+# colors
+pcb_blue = (0,120,160)
+screen_blue = (0,0,60)
+solder_silver = (150,150,150)
+white = (255,255,255)
+black = (0,0,0)
+orange = (250,170,0)
+grey = (100,100,100)
+matte = (25,25,25)
+
 def draw128x64oled(screen,x,y):
 	# entire pcb dimesnions
 	oled_width = 145 # pcb width
@@ -45,14 +55,6 @@ def draw128x64oled(screen,x,y):
 	pin2_x = pin1_x+11
 	pin3_x = pin2_x+11
 	pin4_x = pin3_x+11
-	
-	# colors
-	pcb_blue = (0,120,160)
-	screen_blue = (0,0,60)
-	solder_silver = (150,150,150)
-	white = (255,255,255)
-	black = (0,0,0)
-	orange = (250,180,0)
 
 	# rectangle definitions
 	pin1 = (pin1_x,y+2,pin_x,pin_y)
@@ -89,5 +91,45 @@ def draw128x64oled(screen,x,y):
 
 def draw280x320lcd(screen,x,y):
 	# x and y are starting point for everything
-	
+	lcd_w = 280
+	lcd_h = 320
+	lcd_x = x+5
+	lcd_y = y+5
+
+	carrier_w = lcd_w + 10 # 5 pixels on each side
+	carrier_h = lcd_h + 30 # large bump at bottom
+
+	# Ribbon Cable Width
+	r_c_w = lcd_w/1.5 
+	r_c_h = 30
+	r_c_x = x+(carrier_w/2-r_c_w/2)
+	r_c_y = y+carrier_h
+
+	# Secondary Ribbon Cable
+	rc2_w = r_c_w/1.5
+	rc2_h = 45
+	rc2_x = r_c_x+(r_c_w/2-rc2_w/2)
+	rc2_y = r_c_y+r_c_h
+
+	# Black bar on secondary ribbon cable
+	bs_w = r_c_w/1.5
+	bs_h = 23
+	bs_x = r_c_x+(r_c_w/2-rc2_w/2)
+	bs_y = rc2_y+bs_h
+
+	# rectangles
+	pcb = (x,y,carrier_w,carrier_h)
+	pixels = (lcd_x,lcd_y,lcd_w,lcd_h)
+	ribbon = (r_c_x,r_c_y,r_c_w,r_c_h)
+	ribbon2 = (rc2_x,rc2_y,rc2_w,rc2_h)
+	blackspot = (bs_x,bs_y,bs_w,bs_h)
+
+	# draws
+	pygame.gfxdraw.box(screen,pcb,black)
+	pygame.gfxdraw.box(screen,pixels,matte)
+	pygame.gfxdraw.box(screen,ribbon,orange)
+	pygame.gfxdraw.box(screen,ribbon2,orange)
+	pygame.gfxdraw.box(screen,blackspot,black)
+
+
 

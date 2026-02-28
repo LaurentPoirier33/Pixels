@@ -11,6 +11,8 @@ SCN_WDTH = input("enter screen width\n")
 SCN_HGHT = input("enter screen height\n")
 # --- 	 							 ---
 
+meow = "meow"
+
 pygame.init()
 lcd = pygame.display.set_mode((int(SCN_WDTH),int(SCN_HGHT)))
 clock = pygame.time.Clock()

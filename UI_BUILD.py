@@ -6,6 +6,39 @@ import diffscreens
 # skip the graphics entry once, to allow the ui to load
 init = 0
 
+# where to put the top left corner of either lcd
+startx = 50
+starty = 50
+
+# oled graphic definitions
+pixels_width = 128
+pixels_height = 64
+oled_width = 145 # pcb width
+oled_height = 140 # pcb height
+
+# 280x320 lcd graph definitions
+lcd_w = 280
+lcd_h = 320
+lcd_x = startx+5
+lcd_y = starty+5
+
+
+print("Usage tips:\n") 
+print("128x64 OLED -> screen_type = 64_OLED\n280x320 lcd -> screen_type = 320LCD")
+
+screen_type = input("What type of display is the UI being made for?\n")
+
+if (screen_type == "64_OLED"):
+	display_screen = pygame.Surface((128,64))
+	# where the first pixel is with respect to start_x&y
+	x_pixels = startx+8
+	y_pixels = starty+(oled_height/2-pixels_height/2)
+
+if (screen_type == "320LCD"):
+	display_screen = pygame.Surface((280,320))
+	x_pixels = lcd_x
+	y_pixels = lcd_y
+
 SCN_WDTH = 500
 SCN_HGHT = 500
 
@@ -14,8 +47,6 @@ main_screen = pygame.display.set_mode((int(SCN_WDTH),int(SCN_HGHT)))
 clock = pygame.time.Clock()
 running = True
 
-oled_screen = pygame.Surface((128,64))
-
 WHITE = (255,255,255)
 BLACK = (0,0,0)
 RED = (255,0,0)
@@ -23,16 +54,7 @@ GREEN = (0,255,0)
 BLUE = (0,0,255)
 YELLOW = (255,255,0)
 PINK = (255,0,255)
-
-startx = 50
-starty = 50
-
-pixels_width = 128
-pixels_height = 64
-oled_width = 145 # pcb width
-oled_height = 140 # pcb height
-x_pixels = startx+8
-y_pixels = starty+(oled_height/2-pixels_height/2)
+matte = (25,25,25)
 screen_blue = (0,0,60)
 
 current_font = pygame.font.SysFont("Courier" , 20, False, False)
@@ -90,7 +112,7 @@ def draw_function(lcd, function, arguments):
 		currentTextSurface = current_font.render(text,
 			False,
 			textColor,
-			backtextColor)
+			display_screen.get_at((cursor[0],cursor[1]-1)))
 		lcd.blit(currentTextSurface, cursor)
 
 	# c++: clearDisplay (void)
@@ -337,6 +359,12 @@ def handle_instruction(instruction):
 
 		args = args.split(",")
 		for j in range(len(args)):
+			if (screen_type == "64_OLED"):
+				if ("WHITE" in args[j]):
+					args[j] = WHITE
+				if ("BLACK" in args[j]):
+					args[j] = BLACK
+			else:
 				if ("WHITE" in args[j]):
 					args[j] = WHITE
 				if ("BLACK" in args[j]):
@@ -352,23 +380,26 @@ def handle_instruction(instruction):
 				if ("PINK" in args[j]):
 					args[j] = PINK
 
-	function_stack.append(lambda: draw_function(oled_screen, func, args))
+	function_stack.append(lambda: draw_function(display_screen, func, args))
 
 while running:
 	for event in pygame.event.get():
 		if event.type == pygame.QUIT:
 			running = False
 	main_screen.fill("white")
-
-	diffscreens.draw128x64oled(main_screen,startx,starty)
-
+	if (screen_type == "64_OLED"):
+		diffscreens.draw128x64oled(main_screen,startx,starty)
+		display_screen.fill(screen_blue)
+	if (screen_type == "320LCD"):
+		diffscreens.draw280x320lcd(main_screen,startx,starty)
+		display_screen.fill(matte)
+	
 	if (init == 1):
 		instruction = input("Enter line\n")
 		handle_instruction(instruction)
-		oled_screen.fill(screen_blue)
 		for func in function_stack:
 			func()
-			main_screen.blit(oled_screen, (x_pixels,y_pixels))
+			main_screen.blit(display_screen, (x_pixels,y_pixels))
 
 	init = 1
 	pygame.display.flip()
