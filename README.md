@@ -12,6 +12,7 @@ The requirments are simple:
 	* UI_BUILD.py, parse.py or build_pages.py installed (your choice)
 	
 	* diffscreens.py installed (display visualization)
+Warning: I have not gone and tested every single possible combination of entries for every possible input. I have built safetys everywhere I could and if you find a sneaky bug, feel free to share so it may be fixed and this project can grow!
 
 Parse.py is a simple, one-time graphics command viewer that allows for quick code dumps and simulations. Begin by entering desired screen width and height (On mac windows will be corner rounded and you will lose visuals), then pasting in the code block. Finish typing with "END" and the simulated UI will show. Most likely won't be updated as UI_BUILD grows.
 
