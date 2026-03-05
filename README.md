@@ -9,12 +9,14 @@ The requirments are simple:
 	
 	* pygame installed
 	
-	* UI_BUILD.py or parse.py installed (your choice)
+	* UI_BUILD.py, parse.py or build_pages.py installed (your choice)
 	
 	* diffscreens.py installed (display visualization)
 
 Parse.py is a simple, one-time graphics command viewer that allows for quick code dumps and simulations. Begin by entering desired screen width and height (On mac windows will be corner rounded and you will lose visuals), then pasting in the code block. Finish typing with "END" and the simulated UI will show. Most likely won't be updated as UI_BUILD grows.
 
 UI_BUILD.py is a more rounded version of parse. It includes some simple display visuals, easier user communication and editable canvases plus a more dynamic codebase. Beware, I am still working towards ignoring drawn pixels outside of the round lcd. Pygame does not contain circle drawing surfaces, but ill continue trying until I find a way.
+
+build_pages.py is the tool of all tools. It houses the editability and flexibility of a single screen, but expands it so you can work on multiple differents "pages". This vastly increases productivity and flips a new page in the next implementations of this project.
 
 I will continue working on this project, adding and fixing until it is acceptable.
