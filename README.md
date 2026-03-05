@@ -10,7 +10,7 @@ The requirments are simple:
 	* pygame installed
 	
 	* UI_BUILD.py or parse.py installed (your choice)
-
+	
 	* diffscreens.py installed (display visualization)
 
 Parse.py is a simple, one-time graphics command viewer that allows for quick code dumps and simulations. Begin by entering desired screen width and height (On mac windows will be corner rounded and you will lose visuals), then pasting in the code block. Finish typing with "END" and the simulated UI will show. Most likely won't be updated as UI_BUILD grows.

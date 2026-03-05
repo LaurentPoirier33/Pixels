@@ -3,7 +3,6 @@ import pygame.gfxdraw
 import re
 import diffscreens
 
-# skip the graphics entry once, to allow the ui to load
 init = 0
 
 # color of undrawn pixels
@@ -42,7 +41,6 @@ print("Coding tips:\n")
 print("If you want to remove the last function, simply type -1\n")
 print("If you want to get rid of all the functions, type 0\n")
 
-
 while (True):
 	screen_type = input("What type of display is the UI being made for?\n")
 	if (screen_type == "64_OLED"):
@@ -79,6 +77,7 @@ while (True):
 SCN_WDTH = 500
 SCN_HGHT = 500
 
+
 pygame.init()
 main_screen = pygame.display.set_mode((int(SCN_WDTH),int(SCN_HGHT)))
 clock = pygame.time.Clock()
@@ -100,8 +99,9 @@ backtextColor = BLACK
 textSize = 10
 cursor = (50,50)
 
-function_stack = []
-# draw the specific instruction
+# current page is awful, it needs to be defined AND all used in one place
+# additionally, the canvas needs to be in the loop but also keepen track of
+
 def draw_function(lcd, function, arguments):
 	global textColor
 	global backtextColor
@@ -390,87 +390,7 @@ def draw_function(lcd, function, arguments):
 		pygame.gfxdraw.filled_circle(lcd, x+w-r,y+h-r,r,color) # bottom right corner
 		return 1
 
-# filter the instruction and parse to draw_function
-def handle_instruction(instruction):
-	global function_stack
-
-	if (instruction == '-1'):
-		if (len(function_stack) < 1):
-			print("no functions in stack")
-			return
-		else:
-			function_stack.pop()
-			print("function removed")
-			return
-	if (instruction == '0'):
-		# wipe function stack
-		function_stack = []
-		print("stack cleared")
-		return
-	if (instruction == ''):
-		print("skipped line")
-		return
-	else:
-		if "(" not in instruction or ")" not in instruction:
-			print("not a real function")
-			return
-		split_OB_off = instruction.split("(") # split open bracket
-		func = split_OB_off[0]
-		if (len(split_OB_off) <= 1):
-			print("no arguments in function call")
-		else:
-			args = split_OB_off[1].replace(")","")
-			args = args.replace(";","")
-
-		args = args.split(",")
-		for j in range(len(args)):
-			if (screen_type == "64_OLED"):
-				if ("WHITE" in args[j]):
-					args[j] = WHITE
-				if ("BLACK" in args[j]):
-					args[j] = BLACK
-				if ("GREEN" in args[j]):
-					print("only white or black on this oled")
-					return
-				if ("RED" in args[j]):
-					print("only white or black on this oled")
-					return		
-				if ("BLUE" in args[j]):
-					print("only white or black on this oled")
-					return
-				if ("YELLOW" in args[j]):
-					print("only white or black on this oled")
-					return
-				if ("PINK" in args[j]):
-					print("only white or black on this oled")
-					return
-			else:
-				if ("WHITE" in args[j]):
-					args[j] = WHITE
-				if ("BLACK" in args[j]):
-					args[j] = BLACK
-				if ("GREEN" in args[j]):
-					args[j] = GREEN
-				if ("RED" in args[j]):
-					args[j] = RED
-				if ("BLUE" in args[j]):
-					args[j] = BLUE
-				if ("YELLOW" in args[j]):
-					args[j] = YELLOW
-				if ("PINK" in args[j]):
-					args[j] = PINK
-
-	if (draw_function(display_screen, func, args)):
-		function_stack.append((draw_function, display_screen, func, args))
-
-while running:
-	for event in pygame.event.get():
-		if event.type == pygame.QUIT:
-			running = False
-	main_screen.fill("white")
-	# this line below allows the canvas to be cleared prior to redrawing, to avoid old functions
-	display_screen.fill(pygame.SRCALPHA)
-	#
+def draw_lcd_overlay(screen_type, screen, startx, starty):
 	if (screen_type == "64_OLED"):
 		diffscreens.draw128x64oled(main_screen,startx,starty)
 		pixel_color = screen_blue
@@ -487,19 +407,251 @@ while running:
 		diffscreens.drawlcd(main_screen,startx,starty,int(pixel_w),int(pixel_h))
 		pixel_color = matte
 
-	if (init == 1):
-		instruction = input("Enter command\n")
-		handle_instruction(instruction)
-		for funct, *argum in function_stack:
-			# the canvas never gets its function removed, so blit canvas whenever the array is popped or emptied
-			#print(funct, *argum, "\n")
-			funct(*argum)
+def clear_lcd(screen_type, screen, startx, starty):
+	main_screen.fill("white")
+	display_screen.fill(pygame.SRCALPHA)
+	draw_lcd_overlay(screen_type, screen, startx, starty)
+	pygame.display.flip()
 
-			main_screen.blit(display_screen, (x_pixels,y_pixels))
-		#print("DEBUG STACK:\n",debug_stack)
+class pages(list):
+	# this is an array of dictionaries: 
+	# {"id": page_name, "functions": function}
+
+	# here "functions" should be an array of function calls
+
+	# i honestly think pages should control the canvas aswell
+
+
+	# initialize with root page
+	def __init__(self, root_page_name):
+		if root_page_name == "":
+			print("root name cannot be nothing, try root")
+			return
+
+		page_root = {"id": root_page_name, "functions": []} # no functions for now
+		self.append(page_root)
+
+		print("Pages initialized with root page name: ", root_page_name, "\n")
+
+		return
+
+	# return root page name that was initialized at the begining
+	def root_page_name(self):
+		return self[0]["id"]
+
+	# return index of the name of a page
+	def index_at_name(self, page_name):
+		for i in range(len(self)):
+			if self[i]["id"] == page_name:
+				return i
+		print("index_at_name: name not found")
+		return -1
+
+	# returns the functions for that page name
+	def functions_at_name(self, page_name):
+		for i in range(len(self)):
+			if self[i]["id"] == page_name:
+				return self[i]["functions"]
+		print("functions_at_name: name not found")
+		return 0
+
+	def contains_name(self, page_name):
+		for i in range(len(self)):
+			if self[i]["id"] == page_name:
+				return 1
+		print("contains name: name not found")
+		return 0
+
+	# print out all the items (pages and functions) in the page array
+	def list(self):
+		for i in range(len(self)):
+			print("Name: ", self[i]["id"], "\n")
+			print("Functions: ", self[i]["functions"], "\n")
+		return
+
+	# create a new page, with the option to load it with functions
+	def new(self, page_name, page_functions=[]):
+		if self.contains_name(page_name):
+			print("New: a page with that name already exists")
+			return
+		else:
+			new_page = {"id": page_name, "functions": page_functions}
+			self.append(new_page)
+			print("New page: ", page_name, "created\n")
+			return
+
+	# load the current scope with all the functions currently in select page
+	def load(self, page_name):
+		clear_lcd(screen_type, main_screen, startx, starty)
+		if self.contains_name(page_name):
+			if len(self.functions_at_name(page_name)) != 0:
+				for funcs, *args in self.functions_at_name(page_name):
+					funcs(*args)
+				main_screen.blit(display_screen, (x_pixels,y_pixels))
+				pygame.display.flip()
+				return self[self.index_at_name(page_name)]["functions"]
+			else:
+				print("Load: add some functions to the page")
+				return
+		else:
+			print("Load: page not found, load failed\n")
+
+	def edit(self, page_name, screen_layer):
+		clear_lcd(screen_type, main_screen, startx, starty)
+		if self.contains_name(page_name):
+			function_stack = self[self.index_at_name(page_name)]["functions"]
+			command = ""
+			while command != "END":
+				# Issue is here:::
+				if len(function_stack) != 0:
+					for funcs, *args in function_stack:
+						funcs(*args)
+						main_screen.blit(display_screen, (x_pixels,y_pixels))
+						pygame.display.flip()
+				command = input("Enter drawing function\n")
+				# update screen to keep it updated with the commands
+				if (command == '-1'):
+					if (len(function_stack) < 1):
+						print("no functions in stack\n")
+						continue
+					else:
+						function_stack.pop()
+						screen_layer.fill(pygame.SRCALPHA)
+						draw_lcd_overlay(screen_type, main_screen, startx, starty)
+						pygame.display.flip()
+						print("function removed\n")
+						continue
+				if (command == '0'):
+					# wipe function stack
+					function_stack = []
+					screen_layer.fill(pygame.SRCALPHA)
+					draw_lcd_overlay(screen_type, main_screen, startx, starty)
+					pygame.display.flip()
+					print("stack cleared\n")
+					continue
+				if (command == ''):
+					print("skipped line\n")
+					continue
+
+				if "(" in command or ")" in command:
+					split_OB_off = command.split("(") # split open bracket
+					func = split_OB_off[0]
+					if (len(split_OB_off) <= 1):
+						print("no arguments in function call\n")
+					else:
+						args = split_OB_off[1].replace(")","")
+						args = args.replace(";","")
+
+					args = args.split(",")
+					for j in range(len(args)):
+						if ("WHITE" in args[j]):
+							args[j] = WHITE
+						if ("BLACK" in args[j]):
+							args[j] = BLACK
+						if ("GREEN" in args[j]):
+							args[j] = GREEN
+						if ("RED" in args[j]):
+							args[j] = RED
+						if ("BLUE" in args[j]):
+							args[j] = BLUE
+						if ("YELLOW" in args[j]):
+							args[j] = YELLOW
+						if ("PINK" in args[j]):
+							args[j] = PINK
+
+					# as long as draw function does not return 0, add it to stack
+					if draw_function(screen_layer, func, args):
+						function_stack.append((draw_function, screen_layer, func, args))
+			print("editing finished")
+			self[self.index_at_name(page_name)]["functions"] = function_stack
+			return
+		else:
+			print("Edit: page not found, edit failed\n")
+			return
+
+	def remove(self, page_name):
+		if page_name == self.root_page_name():
+			print("Remove: cannot remove root page")
+			return 0
+		if self.pop(self.index_at_name(page_name)):
+			print("Remove: ", page_name, "success")
+			self.load(self.root_page_name())
+			return 1
+		else:
+			print("Remove: page not found, remove failed\n")
+			return 0
+
+page_list = pages("root")
+
+# page_list.new("menu")
+# page_list.list()
+# page_list.remove("menu")
+# page_list.list()
+
+# function_example = [(draw_function, main_screen, 'drawRect', (5,5,200,200,(255,0,255)))]
+
+# page_list.new("home", function_example)
+
+# page_list.list()
+
+# page_list.load("home")
+
+# #page_list.edit("home", main_screen)
+
+# page_list.list()
+
+
+while running:
+	for event in pygame.event.get():
+		if event.type == pygame.QUIT:
+			running = False
+
+	if init == 0:
+		main_screen.fill("white")
+		display_screen.fill(pygame.SRCALPHA)
+		draw_lcd_overlay(screen_type, main_screen, startx, starty)
+		pygame.display.flip()
+
+	cmd = input("enter page command\n")
+	split_space = cmd.split(" ")
+
+	if (len(split_space) < 2):
+		print("Page: Invalid page call")
+		continue
+	# split_space[0] is just page (or should be)
+	cmd = split_space[1]
+	# for single command page calls
+	if ("page" in split_space[0]):
+		if (len(split_space) == 2):
+			if (cmd == "current_page"):
+				page_list.current_page()
+				continue
+			if (cmd == "list"):
+				page_list.list()
+				continue
+		# now that the single cmd page calls left:
+		if (len(split_space) != 3):
+			print("Page: invalid page call")
+			continue
+		call_name = split_space[2]
+		if (cmd == "new"):
+			page_list.new(call_name)
+			continue
+		if (cmd == "remove"):
+			page_list.remove(call_name)
+			continue
+		if (cmd == "load"):
+			page_list.load(call_name)
+			continue
+		if (cmd == "edit"):
+			page_list.edit(call_name, display_screen)
 
 	init = 1
-	pygame.display.flip()
-	clock.tick(60) # 60 fps
+	main_screen.blit(display_screen, (x_pixels,y_pixels))
 
-pygame.quit()
+	pygame.display.flip()
+
+
+	clock.tick(60)
+
+
